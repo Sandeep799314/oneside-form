@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===============================
+   🔥 HORIZONTAL SCAN LINE
+   =============================== */
+
+@keyframes scanX {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-scan-x {
+  animation: scanX 2.5s linear infinite;
+}
+
+/* ===============================
+   ✨ FLOATING STAR
+   =============================== */
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-10px);
+    opacity: 0.7;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
+/* ===============================
+   🔥 REAL VERTICAL SCAN EFFECT
+   =============================== */
+
+@keyframes scanVertical {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-scan-vertical {
+  position: absolute;
+  animation: scanVertical 2.8s linear infinite;
+}
+
+/* ===============================
+   ✨ YELLOW BUTTON SHINE EFFECT
+   =============================== */
+
+@keyframes shine {
+  0% {
+    left: -120%;
+  }
+  100% {
+    left: 120%;
+  }
+}
+
+.animate-shine {
+  animation: shine 2.5s linear infinite;
+}
+/* ===============================
+   🌊 BUTTON RIPPLE EFFECT
+   =============================== */
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.6);
+  animation: ripple 0.6s linear;
+}
+/* ===============================
+   🌊 WATER CURRENT BUTTON EFFECT
+   =============================== */
+
+@keyframes waterFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-water {
+  background: linear-gradient(
+    120deg,
+    #facc15,
+    #fde047,
+    #facc15,
+    #eab308,
+    #fde047
+  );
+  background-size: 300% 300%;
+  animation: waterFlow 3s ease-in-out infinite;
+}
+/* ===============================
+   🌊 GOLDEN WATER SWEEP EFFECT
+   =============================== */
+
+@keyframes waterSweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.water-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 120%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,215,0,0.6),
+    rgba(255,223,0,0.9),
+    rgba(255,215,0,0.6),
+    transparent
+  );
+  animation: waterSweep 0.8s ease-out forwards;
+  pointer-events: none;
+}

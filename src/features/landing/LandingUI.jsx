@@ -1,25 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { saveToGoogleSheet } from "../../utils/googleSheets";
 
-// ─── Manual Entry Form (replaces animated demo on left) ───────
-function ManualEntryForm() {
-  const EMPTY = { name: "", phone: "", email: "", company: "", designation: "", address: "" };
-  const [form, setForm]     = useState(EMPTY);
-  const [status, setStatus] = useState("idle"); // idle | saving | success | error
-  const [msg, setMsg]       = useState("");
+/* ---------------- MANUAL FORM (With Scroll & Laptop Fix) ---------------- */
+
+function ManualEntryForm({ isMobile }) {
+  const EMPTY = {
+    firstName: "",
+    lastName: "",
+    company: "",
+    phone: "",
+    email: "",
+    designation: "",
+    website: "",
+    address: "",
+    notes: ""
+  };
+
+  const [form, setForm] = useState(EMPTY);
+  const [status, setStatus] = useState("idle");
+  const [msg, setMsg] = useState("");
+  const [showOptional, setShowOptional] = useState(false);
 
   const handleChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) { setMsg("Name is required."); setStatus("error"); return; }
+    if (!form.firstName.trim()) {
+      setMsg("First Name is required.");
+      setStatus("error");
+      return;
+    }
     setStatus("saving");
     setMsg("");
     const res = await saveToGoogleSheet(form, "manual");
     if (res.success) {
       setStatus("success");
-      setMsg("Contact saved to Google Sheet ✓");
+      setMsg("Contact saved successfully ✓");
       setForm(EMPTY);
+      setShowOptional(false);
       setTimeout(() => { setStatus("idle"); setMsg(""); }, 3000);
     } else {
       setStatus("error");
@@ -27,224 +45,246 @@ function ManualEntryForm() {
     }
   };
 
-  const fields = [
-    { name: "name",        label: "Full Name",  placeholder: "Rajesh Kumar",       required: true  },
-    { name: "phone",       label: "Phone",       placeholder: "+91 98765 43210",    required: false },
-    { name: "email",       label: "Email",       placeholder: "rajesh@techcorp.in", required: false },
-    { name: "company",     label: "Company",     placeholder: "TechCorp Pvt. Ltd.", required: false },
-    { name: "designation", label: "Designation", placeholder: "Sales Manager",      required: false },
-    { name: "address",     label: "Address",     placeholder: "Mumbai, Maharashtra",required: false },
-  ];
+  const InputRow = ({ name, placeholder, isLast }) => (
+    <div style={{
+      borderBottom: isLast ? "none" : "1px solid #f2f2f7",
+      padding: "12px 16px",
+      display: "flex",
+      alignItems: "center",
+      background: "#fff"
+    }}>
+      <input
+        name={name}
+        value={form[name]}
+        onChange={handleChange}
+        placeholder={placeholder}
+        style={{
+          width: "100%", border: "none", outline: "none",
+          fontSize: "16px", color: "#000", background: "transparent",
+          fontFamily: "inherit"
+        }}
+      />
+    </div>
+  );
 
   return (
     <div style={{
-      width: "100%", maxWidth: 320,
-      background: "#fff",
-      border: "1px solid #ebebeb",
-      borderRadius: 16,
-      overflow: "hidden",
-      boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
-      display: "flex", flexDirection: "column",
+      width: "100%",
+      maxWidth: 360,
+      background: "#f2f2f7",
+      borderRadius: 28,
+      boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+      display: "flex",
+      flexDirection: "column",
+      // Laptop fix: Limit height and add scroll
+      maxHeight: isMobile ? "none" : "80vh",
+      overflowY: isMobile ? "visible" : "auto",
+      flexShrink: 0,
+      paddingBottom: 20,
+      // Custom scrollbar styling
+      scrollbarWidth: "none", 
+      msOverflowStyle: "none"
     }}>
-      {/* macOS-style title bar */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 6,
-        padding: "9px 14px",
-        background: "#f9f9f9",
-        borderBottom: "1px solid #ebebeb",
-      }}>
-        {["#ff5f57","#febc2e","#28c840"].map((c,i) => (
-          <div key={i} style={{ width:8, height:8, borderRadius:"50%", background:c }} />
-        ))}
-        <div style={{ flex:1, textAlign:"center", fontSize:10, color:"#aaa", letterSpacing:"0.03em" }}>
-          Manual Entry
-        </div>
+      <div style={{ padding: "24px 16px 12px", textAlign: "center" }}>
+        <div style={{ 
+          width: 72, height: 72, background: "#a2a2a7", 
+          borderRadius: "50%", margin: "0 auto 12px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "#fff", fontSize: 32
+        }}>👤</div>
+        <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: "#000" }}>New Contact</h2>
       </div>
 
-      {/* Badge */}
-      <div style={{ padding:"12px 16px 6px" }}>
-        <div style={{
-          display:"inline-flex", alignItems:"center", gap:6,
-          background:"#fffbeb", border:"1px solid #fde68a",
-          padding:"3px 10px", borderRadius:99,
-        }}>
-          <span style={{ fontSize:10 }}>✏️</span>
-          <span style={{ fontSize:9, fontWeight:700, color:"#92400e", textTransform:"uppercase", letterSpacing:"0.1em" }}>
-            Enter Contact Details
-          </span>
+      <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 15 }}>
+        <div style={{ borderRadius: 12, overflow: "hidden" }}>
+          <InputRow name="firstName" placeholder="First name *" />
+          <InputRow name="lastName" placeholder="Last name" />
+          <InputRow name="company" placeholder="Company" isLast />
         </div>
-      </div>
 
-      {/* Fields */}
-      <div style={{ padding:"8px 16px 4px", display:"flex", flexDirection:"column", gap:7 }}>
-        {fields.map(({ name, label, placeholder, required }) => (
-          <div key={name}>
-            <div style={{ fontSize:9, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:3 }}>
-              {label}{required && <span style={{ color:"rgb(247,190,57)", marginLeft:2 }}>*</span>}
-            </div>
-            <input
-              name={name}
-              value={form[name]}
+        <div style={{ borderRadius: 12, overflow: "hidden" }}>
+          <InputRow name="phone" placeholder="Add phone" />
+          <InputRow name="email" placeholder="Add email" isLast />
+        </div>
+
+        {!showOptional && (
+          <button 
+            onClick={() => setShowOptional(true)}
+            style={{ background: "none", border: "none", color: "#007aff", fontSize: 13, fontWeight: 600, cursor: "pointer", textAlign: "left", padding: "0 5px" }}
+          >
+            + Add Designation & Website
+          </button>
+        )}
+
+        {showOptional && (
+          <div style={{ borderRadius: 12, overflow: "hidden" }}>
+            <InputRow name="designation" placeholder="Designation" />
+            <InputRow name="website" placeholder="Website" isLast />
+          </div>
+        )}
+
+        <div style={{ borderRadius: 12, overflow: "hidden" }}>
+          <InputRow name="address" placeholder="Address" />
+          <div style={{ padding: "12px 16px", background: "#fff" }}>
+            <textarea
+              name="notes"
+              value={form.notes}
               onChange={handleChange}
-              placeholder={placeholder}
-              style={{
-                width:"100%", padding:"7px 10px",
-                border:"1.5px solid #e5e7eb",
-                borderRadius:8, fontSize:11,
-                fontFamily:"inherit", outline:"none",
-                transition:"border-color 0.15s",
-                boxSizing:"border-box",
-                background:"#fafafa",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "rgb(247,190,57)")}
-              onBlur={(e)  => (e.target.style.borderColor = "#e5e7eb")}
+              placeholder="Notes"
+              style={{ width: "100%", height: 50, border: "none", outline: "none", fontSize: "16px", resize: "none", fontFamily: "inherit" }}
             />
           </div>
-        ))}
-      </div>
-
-      {/* Status */}
-      {msg && (
-        <div style={{
-          margin:"4px 16px 0",
-          padding:"6px 10px",
-          borderRadius:8,
-          fontSize:10, fontWeight:600,
-          background: status === "success" ? "#f0fdf4" : "#fef2f2",
-          color:      status === "success" ? "#16a34a" : "#dc2626",
-          border:`1px solid ${status==="success"?"#bbf7d0":"#fecaca"}`,
-        }}>
-          {msg}
         </div>
-      )}
 
-      {/* Submit */}
-      <div style={{ padding:"10px 16px 14px" }}>
+        {msg && (
+          <div style={{ textAlign: "center", fontSize: 13, fontWeight: 500, color: status === "success" ? "#34c759" : "#ff3b30" }}>
+            {msg}
+          </div>
+        )}
+
         <button
           onClick={handleSubmit}
           disabled={status === "saving"}
           style={{
-            width:"100%", height:40,
-            display:"flex", alignItems:"center", justifyContent:"center", gap:6,
-            background: status === "success" ? "#22c55e" : "rgb(247,190,57)",
-            color:"#fff",
-            border:"none", borderRadius:10,
-            fontSize:11, fontWeight:800,
-            textTransform:"uppercase", letterSpacing:"0.08em",
-            cursor: status === "saving" ? "not-allowed" : "pointer",
-            opacity: status === "saving" ? 0.8 : 1,
-            transition:"all 0.15s",
-            fontFamily:"inherit",
-            boxShadow:"0 4px 14px rgba(247,190,57,0.35)",
+            width: "100%", height: 52, background: "#f7be39", color: "#fff",
+            border: "none", borderRadius: 14, fontWeight: 700, fontSize: 16,
+            cursor: "pointer", boxShadow: "0 4px 12px rgba(247,184,57,0.3)",
+            // Laptop par button hamesha niche chipka rahega
+            position: isMobile ? "static" : "sticky",
+            bottom: 0
           }}
         >
-          {status === "saving"  && <span style={{ fontSize:13 }}>⏳</span>}
-          {status === "success" && <span style={{ fontSize:13 }}>✓</span>}
-          {status === "idle"    && <span style={{ fontSize:13 }}>💾</span>}
-          {status === "error"   && <span style={{ fontSize:13 }}>!</span>}
-          {status === "submitting"  ? "Submitting..." : status === "success" ? "Submitted!" : "*"}
+          {status === "saving" ? "Saving..." : "SUBMIT CONTACT"}
         </button>
       </div>
     </div>
   );
 }
 
-// ─── Main Landing Page ─────────────────────────────────────────
+/* ---------------- LANDING PAGE (Alignment Fix) ---------------- */
+
 export default function LandingUI({ onStart }) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   return (
-    <div style={{
-      height:"100vh", width:"100%",
-      background:"#fff",
-      display:"flex", flexDirection:"column",
-      color:"#111", overflow:"hidden",
-    }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
-        * { box-sizing:border-box; font-family:'Poppins',sans-serif !important; }
-        @keyframes floatAnim { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
-        .cta-btn:hover {
-          background:rgb(224,150,32) !important;
-          transform:translateY(-1px);
-          box-shadow:0 12px 28px -4px rgba(247,190,57,0.55) !important;
-        }
-        @media(min-width:1024px){
-          .lp-grid  { flex-direction:row !important; align-items:center !important; gap:72px !important; }
-          .lp-left  { flex:0 0 auto; width:340px !important; align-items:center !important; }
-          .lp-right { flex:1 1 0; align-items:flex-start !important; text-align:left !important; max-width:520px; }
-          .lp-logo  { display:flex !important; }
-          .lp-right .lp-cta { align-items:flex-start !important; }
-        }
-      `}</style>
-
-      <main style={{
-        flex:1,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        paddingTop:10, paddingBottom:24, paddingLeft:40, paddingRight:40,
-        overflow:"hidden", background:"#fff",
-      }}>
-        <div className="lp-grid" style={{
-          width:"100%", maxWidth:1040,
-          display:"flex", flexDirection:"column",
-          alignItems:"center", gap:40,
-        }}>
-
-          {/* LEFT — Manual Entry Form */}
-          <div className="lp-left" style={{
-            width:"100%", display:"flex",
-            flexDirection:"column", alignItems:"center", gap:10,
-          }}>
-            <div style={{ animation:"floatAnim 4s ease-in-out infinite", width:"100%", display:"flex", justifyContent:"center" }}>
-              <ManualEntryForm />
-            </div>
-          </div>
-
-          {/* RIGHT — CTA */}
-          <div className="lp-right" style={{
-            width:"100%", display:"flex",
-            flexDirection:"column", alignItems:"center",
-            textAlign:"center", gap:24,
-          }}>
-
-            <div className="lp-logo" style={{ display:"none", alignItems:"center", marginBottom:2 }}>
-              <img src="/logo3.png" alt="trav platforms" style={{ height:30, width:"auto", objectFit:"contain" }} />
-            </div>
-
-            <h1 style={{
-              fontWeight:900, color:"#111", lineHeight:1.1,
-              margin:0, letterSpacing:"-0.02em",
-              fontSize:"clamp(28px,3.4vw,52px)",
-            }}>
-              Scan Any{" "}
-              <span style={{ color:"rgb(247,190,57)" }}>Business Card</span>
-              {" "}With AI Precision
-            </h1>
-
-            <p style={{ color:"#6b7280", lineHeight:1.8, margin:0, fontSize:"clamp(14px,1.1vw,16px)", fontWeight:400, maxWidth:420 }}>
-              Got a stack of business cards?{" "}
-              <strong style={{ color:"#111", fontWeight:700 }}>Scan any card in seconds</strong>
-              {" "}— then WhatsApp, email, or export every contact instantly.
-            </p>
-
-            <div className="lp-cta" style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, width:"100%" }}>
-              <button onClick={onStart} className="cta-btn" style={{
-                display:"flex", alignItems:"center", justifyContent:"center", gap:10,
-                border:"none", cursor:"pointer",
-                width:"100%", maxWidth:260, height:52,
-                background:"rgb(247,190,57)", color:"#fff",
-                fontWeight:800, fontSize:13, letterSpacing:"0.07em", textTransform:"uppercase",
-                borderRadius:12, boxShadow:"0 8px 24px -4px rgba(247,190,57,0.45)",
-                transition:"all 0.15s",
-              }}>
-                Start Scanning
-                <svg style={{ width:14, height:14, flexShrink:0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-            </div>
-
-          </div>
+    <div
+      style={{
+        minHeight: "100vh",
+        width: "100%",
+        background: "#fff",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center", // Laptop par vertically center
+        padding: isMobile ? "90px 20px 40px" : "20px",
+        overflowX: "hidden",
+        boxSizing: "border-box"
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 1200,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: isMobile ? 30 : 60,
+        }}
+      >
+        {/* FORM SECTION - Desktop Order: Left */}
+        <div style={{ order: isMobile ? 3 : 1, flex: 1, display: "flex", justifyContent: "center" }}>
+          <ManualEntryForm isMobile={isMobile} />
         </div>
-      </main>
+
+        {/* OR DIVIDER - Perfectly Centered Between Sections */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            flexDirection: isMobile ? "row" : "column",
+            gap: 15,
+            order: 2,
+            width: isMobile ? "100%" : "auto",
+            justifyContent: "center",
+            flexShrink: 0
+          }}
+        >
+          <div style={{ width: isMobile ? "30%" : 2, height: isMobile ? 2 : 120, background: "#e5e7eb" }} />
+          <span style={{ fontWeight: 900, color: "#cbd5e1", fontSize: 14 }}>OR</span>
+          <div style={{ width: isMobile ? "30%" : 2, height: isMobile ? 2 : 120, background: "#e5e7eb" }} />
+        </div>
+
+        {/* SCAN SECTION - Desktop Order: Right */}
+        <div style={{ order: isMobile ? 1 : 3, flex: 1, display: "flex", justifyContent: "center" }}>
+          <ScanSection onStart={onStart} isMobile={isMobile} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- SCAN SECTION ---------------- */
+
+function ScanSection({ onStart, isMobile }) {
+  return (
+    <div style={{ 
+      maxWidth: 480, 
+      textAlign: isMobile ? "center" : "left" 
+    }}>
+      <h1
+        style={{
+          fontWeight: 900,
+          fontSize: isMobile ? "36px" : "60px",
+          lineHeight: 1,
+          marginBottom: 16,
+          letterSpacing: "-0.04em",
+          color: "#000"
+        }}
+      >
+        Scan Any <br />
+        <span style={{ color: "#f7be39" }}>Business Card</span>
+      </h1>
+
+      <p
+        style={{
+          color: "#6b7280",
+          marginBottom: 32,
+          fontSize: isMobile ? 16 : 19,
+          lineHeight: 1.6,
+          maxWidth: 420,
+          margin: isMobile ? "0 auto 32px" : "0 0 32px"
+        }}
+      >
+        Turn paper cards into digital contacts instantly 
+        using AI. Save directly to your sheets.
+      </p>
+
+      <button
+        onClick={onStart}
+        style={{
+          height: 64,
+          padding: "0 50px",
+          background: "#000",
+          color: "#fff",
+          border: "none",
+          borderRadius: 20,
+          fontWeight: 800,
+          fontSize: 16,
+          cursor: "pointer",
+          boxShadow: "0 15px 30px rgba(0,0,0,0.15)",
+          transition: "transform 0.2s"
+        }}
+      >
+        START SCANNING NOW →
+      </button>
     </div>
   );
 }

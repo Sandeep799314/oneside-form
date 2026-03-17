@@ -10,37 +10,17 @@ import Results from "../features/results/Results";
 
 export default function App() {
   const { step, goTo } = useStep("landing");
-
   const [contactData, setContactData] = useState(null);
   const [allResults, setAllResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [captureMethod, setCaptureMethod] = useState("upload");
-
-  /* NEW STATE */
   const [returnToResults, setReturnToResults] = useState(false);
+
+  const isLanding = step === "landing";
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [step]);
-
-  const handleFullReset = () => {
-    setContactData(null);
-    setAllResults([]);
-    goTo("landing");
-  };
-
-  const handleNewScan = (d) => {
-    setContactData(d);
-    setAllResults((p) => [...p, d]);
-    setLoading(false);
-    goTo("results");
-  };
-
-  const handleSingleSelection = (m) => {
-    setCaptureMethod(m);
-    setReturnToResults(false);
-    goTo("single");
-  };
 
   const handleBack = () => {
     if (step === "landing") return;
@@ -51,129 +31,107 @@ export default function App() {
 
   const renderScreen = () => {
     switch (step) {
-
       case "landing":
         return <Landing onStart={() => goTo("mode")} />;
-
       case "mode":
         return (
           <ScanMode
-            onBack={handleFullReset}
-            onSingle={handleSingleSelection}
+            onBack={() => goTo("landing")}
+            onSingle={(m) => { setCaptureMethod(m); goTo("single"); }}
             onBulk={() => goTo("bulk")}
           />
         );
-
       case "single":
         return (
           <SingleScan
-            onBack={() => {
-              if (returnToResults) {
-                setReturnToResults(false);
-                goTo("results");
-              } else {
-                goTo("mode");
-              }
-            }}
+            onBack={() => goTo(returnToResults ? "results" : "mode")}
             onBulk={() => goTo("bulk")}
             setStep={goTo}
-            setContactData={handleNewScan}
+            setContactData={(d) => { setContactData(d); setAllResults(p => [...p, d]); setLoading(false); goTo("results"); }}
             setLoading={setLoading}
             captureMethod={captureMethod}
           />
         );
-
-      case "bulk":
-        return (
-          <BulkScan
-            onBack={() => goTo("mode")}
-            onSingle={() => goTo("mode")}
-          />
-        );
-
       case "results":
         return (
           <Results
             data={contactData}
             allResults={allResults}
-            onRescan={() => {
-              setReturnToResults(true);
-              goTo("single");
-            }}
+            onRescan={() => { setReturnToResults(true); goTo("single"); }}
             onBack={() => goTo("mode")}
           />
         );
-
       default:
         return <Landing onStart={() => goTo("mode")} />;
     }
   };
 
-  const isLanding = step === "landing";
-
   return (
     <>
       <style>{`
+        /* Global Mobile Fixes */
         html, body {
           margin: 0;
           padding: 0;
-          overflow-x: hidden;
+          width: 100%;
+          min-height: 100%;
+          background: #fff;
+          /* Horizontal scroll bilkul band */
+          overflow-x: hidden !important; 
         }
 
-        body.no-vscroll {
-          overflow: hidden !important;
-          height: 100vh !important;
+        /* Desktop par landing block rahega, mobile par scroll hoga */
+        @media (min-width: 768px) {
+          body.no-vscroll {
+            overflow: hidden !important;
+            height: 100vh !important;
+          }
+        }
+
+        /* Scan section ko mobile par top par lane ke liye */
+        @media (max-width: 767px) {
+          .mobile-order-1 { order: 1 !important; } /* Scan Section */
+          .mobile-order-2 { order: 2 !important; } /* OR Divider */
+          .mobile-order-3 { order: 3 !important; } /* Manual Form */
+          
+          .landing-container {
+            padding: 80px 20px 40px !important; /* Navbar ke liye top padding */
+            flex-direction: column !important;
+            gap: 40px !important;
+          }
         }
       `}</style>
 
       <BodyScrollController step={step} />
 
-      <div
-        className="w-full bg-white font-sans selection:bg-yellow-100"
-        style={{
-          height: isLanding ? "100vh" : "auto",
-          overflow: isLanding ? "hidden" : "visible",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <div className="w-full flex flex-col" style={{ minHeight: "100vh" }}>
+        
+        {/* Navbar humesha top par rahega */}
+        <div className="fixed top-0 left-0 w-full z-[100]">
+          <Navbar onBack={handleBack} />
+        </div>
 
-        <Navbar onBack={handleBack} />
-
+        {/* Loader Component */}
         {loading && (
-          <div
-            className="fixed inset-0 z-[200] flex items-center justify-center p-6"
-            style={{ background: "rgba(26,26,26,0.65)", backdropFilter: "blur(4px)" }}
-          >
-            <div
-              className="bg-white rounded-[24px] shadow-2xl flex flex-col items-center gap-5 w-full p-8"
-              style={{ maxWidth: 340 }}
-            >
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-[24px] p-8 flex flex-col items-center gap-4 w-full max-w-[320px]">
               <Loader />
-
-              <div className="text-center">
-                <p
-                  className="font-black text-gray-900 animate-pulse"
-                  style={{ fontSize: 18, letterSpacing: "-0.3px" }}
-                >
-                  Analyzing Card Details
-                </p>
-
-                <p
-                  className="text-gray-400 font-medium mt-1"
-                  style={{ fontSize: 13 }}
-                >
-                  AI is extracting data...
-                </p>
-              </div>
+              <p className="font-bold text-gray-900 animate-pulse">Extracting Data...</p>
             </div>
           </div>
         )}
 
-        <div style={{ paddingTop: isLanding ? 0 : 50, flex: 1 }}>
+        {/* Main Content */}
+        <div 
+          className="flex-1 w-full"
+          style={{ 
+            paddingTop: isLanding ? 0 : "60px",
+            display: "flex",
+            flexDirection: "column"
+          }}
+        >
           {renderScreen()}
         </div>
-
       </div>
     </>
   );
@@ -181,25 +139,12 @@ export default function App() {
 
 function BodyScrollController({ step }) {
   useEffect(() => {
-
-    const update = () => {
-      if (step === "landing") {
-        document.body.classList.add("no-vscroll");
-      } else {
-        document.body.classList.remove("no-vscroll");
-      }
-    };
-
-    update();
-
-    window.addEventListener("resize", update);
-
-    return () => {
+    if (step === "landing" && window.innerWidth >= 768) {
+      document.body.classList.add("no-vscroll");
+    } else {
       document.body.classList.remove("no-vscroll");
-      window.removeEventListener("resize", update);
-    };
-
+    }
+    return () => document.body.classList.remove("no-vscroll");
   }, [step]);
-
   return null;
 }
